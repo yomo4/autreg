@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import textwrap
 from typing import Optional
 
 from telegram import (
@@ -100,36 +99,30 @@ async def _send(update: Update, text: str, **kwargs):
 
 @admin_only
 async def cmd_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    text = textwrap.dedent("""
-        👋 *Kleinanzeigen Auto-Reg Bot*
-
-        Бот автоматически регистрирует аккаунт на Kleinanzeigen\\.de\\.
-
-        Команды:
-        /reg — начать регистрацию
-        /cancel — отменить
-        /help — справка
-    """)
-    await _send(update, text, parse_mode=ParseMode.MARKDOWN_V2)
+    text = (
+        "👋 <b>Kleinanzeigen Auto-Reg Bot</b>\n\n"
+        "Бот автоматически регистрирует аккаунт на Kleinanzeigen.de.\n\n"
+        "Команды:\n"
+        "/reg — начать регистрацию\n"
+        "/cancel — отменить\n"
+        "/help — справка"
+    )
+    await _send(update, text, parse_mode=ParseMode.HTML)
 
 
 @admin_only
 async def cmd_help(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    text = textwrap.dedent("""
-        📖 *Справка*
-
-        *Формат прокси:*
-        `ip:port` — без авторизации
-        `ip:port:login:password` — с авторизацией
-        Введите `-` если прокси не нужен\\.
-
-        *Email\\-пароль* нужен для автоматического считывания письма верификации через IMAP\\.
-
-        *Телефон* вводится в международном формате: `\\+491234567890`
-
-        После отправки номера телефона дождитесь SMS и введите код\\.
-    """)
-    await _send(update, text, parse_mode=ParseMode.MARKDOWN_V2)
+    text = (
+        "📖 <b>Справка</b>\n\n"
+        "<b>Формат прокси:</b>\n"
+        "<code>ip:port</code> — без авторизации\n"
+        "<code>ip:port:login:password</code> — с авторизацией\n"
+        "Введите <code>-</code> если прокси не нужен.\n\n"
+        "<b>Email-пароль</b> нужен для автоматического считывания письма верификации через IMAP.\n\n"
+        "<b>Телефон</b> вводится в международном формате: <code>+491234567890</code>\n\n"
+        "После отправки номера телефона дождитесь SMS и введите код."
+    )
+    await _send(update, text, parse_mode=ParseMode.HTML)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -152,12 +145,12 @@ async def cmd_reg(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     ctx.user_data.clear()
     await _send(
         update,
-        "🔄 *Шаг 1/4* — Введите прокси\\.\n\n"
+        "🔄 <b>Шаг 1/4</b> — Введите прокси.\n\n"
         "Форматы:\n"
-        "`ip:port`\n"
-        "`ip:port:login:password`\n\n"
-        "Введите `-` если прокси не нужен\\.",
-        parse_mode=ParseMode.MARKDOWN_V2,
+        "<code>ip:port</code>\n"
+        "<code>ip:port:login:password</code>\n\n"
+        "Введите <code>-</code> если прокси не нужен.",
+        parse_mode=ParseMode.HTML,
     )
     return WAITING_PROXY
 
@@ -172,8 +165,8 @@ async def recv_proxy(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 
     await _send(
         update,
-        "📧 *Шаг 2/4* — Введите email для регистрации на Kleinanzeigen\\:",
-        parse_mode=ParseMode.MARKDOWN_V2,
+        "📧 <b>Шаг 2/4</b> — Введите email для регистрации на Kleinanzeigen:",
+        parse_mode=ParseMode.HTML,
     )
     return WAITING_EMAIL
 
@@ -191,10 +184,10 @@ async def recv_email(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     ctx.user_data[KEY_EMAIL] = email
     await _send(
         update,
-        "🔑 *Шаг 3/4* — Введите пароль от этого email\\-ящика\\.\n"
-        "_Нужен для автоматической проверки письма верификации через IMAP\\._\n\n"
-        "⚠️ Пароль используется только локально и никуда не передаётся\\.",
-        parse_mode=ParseMode.MARKDOWN_V2,
+        "🔑 <b>Шаг 3/4</b> — Введите пароль от этого email-ящика.\n"
+        "<i>Нужен для автоматической проверки письма верификации через IMAP.</i>\n\n"
+        "⚠️ Пароль используется только локально и никуда не передаётся.",
+        parse_mode=ParseMode.HTML,
     )
     return WAITING_EMAIL_PASS
 
@@ -207,10 +200,10 @@ async def recv_email_pass(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     ctx.user_data[KEY_EMAIL_PASS] = (update.message.text or "").strip()
     await _send(
         update,
-        "📱 *Шаг 4/4* — Введите номер телефона\\.\n"
-        "Формат: `\\+491234567890`\n\n"
-        "Введите `-` чтобы пропустить шаг с телефоном\\.",
-        parse_mode=ParseMode.MARKDOWN_V2,
+        "📱 <b>Шаг 4/4</b> — Введите номер телефона.\n"
+        "Формат: <code>+491234567890</code>\n\n"
+        "Введите <code>-</code> чтобы пропустить шаг с телефоном.",
+        parse_mode=ParseMode.HTML,
     )
     return WAITING_PHONE
 
@@ -233,11 +226,11 @@ async def recv_phone(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     await _send(
         update,
         f"🚀 Начинаю регистрацию…\n\n"
-        f"📧 Email: `{email}`\n"
-        f"🔐 Пароль KA: `{ka_password}`\n"
-        f"🌐 Прокси: `{proxy or 'нет'}`\n"
-        f"📱 Телефон: `{phone or 'не указан'}`",
-        parse_mode=ParseMode.MARKDOWN_V2,
+        f"📧 Email: <code>{_escape(email)}</code>\n"
+        f"🔐 Пароль KA: <code>{_escape(ka_password)}</code>\n"
+        f"🌐 Прокси: <code>{_escape(proxy or 'нет')}</code>\n"
+        f"📱 Телефон: <code>{_escape(phone or 'не указан')}</code>",
+        parse_mode=ParseMode.HTML,
     )
 
     # Run registration in background task so we can stay reactive
@@ -265,7 +258,7 @@ async def _run_registration(
     bot = ctx.application.bot
 
     async def notify(text: str):
-        await bot.send_message(chat_id, text, parse_mode=ParseMode.MARKDOWN_V2)
+        await bot.send_message(chat_id, text, parse_mode=ParseMode.HTML)
 
     reg = KleinanzeigenRegistrar(proxy_str=proxy)
     ctx.user_data[KEY_REGISTRAR] = reg
@@ -278,15 +271,15 @@ async def _run_registration(
         ok = await reg.fill_registration_form(email, ka_password)
         if not ok:
             await notify(
-                "❌ Не удалось заполнить форму регистрации\\.\n"
-                + _escape("Логи:\n" + "\n".join(reg.logs[-10:]))
+                "❌ Не удалось заполнить форму регистрации.\n"
+                "<pre>" + _escape("\n".join(reg.logs[-10:])) + "</pre>"
             )
             return
 
         # ── 2. Email verification ──────────────────────────────────────────────
         await notify(
-            f"📬 Жду письмо верификации на `{_escape(email)}`…\n"
-            f"_Таймаут: {EMAIL_CHECK_TIMEOUT} сек\\._"
+            f"📬 Жду письмо верификации на <code>{_escape(email)}</code>…\n"
+            f"<i>Таймаут: {EMAIL_CHECK_TIMEOUT} сек.</i>"
         )
         link = await async_fetch_verification_link(
             email, email_pass, timeout=EMAIL_CHECK_TIMEOUT
@@ -294,37 +287,37 @@ async def _run_registration(
 
         if not link:
             await notify(
-                "⚠️ Письмо верификации не пришло за отведённое время\\.\n"
-                "Проверьте ящик вручную или увеличьте `EMAIL_CHECK_TIMEOUT`\\."
+                "⚠️ Письмо верификации не пришло за отведённое время.\n"
+                "Проверьте ящик вручную или увеличьте <code>EMAIL_CHECK_TIMEOUT</code>."
             )
             # Don't abort — maybe phone step is needed
         else:
-            await notify("✅ Письмо найдено\\. Открываю ссылку верификации…")
+            await notify("✅ Письмо найдено. Открываю ссылку верификации…")
             await reg.open_verification_link(link)
-            await notify("✅ Email подтверждён\\!")
+            await notify("✅ Email подтверждён!")
 
         # ── 3. Phone step ─────────────────────────────────────────────────────
         if phone:
-            await notify(f"📱 Добавляю номер `{_escape(phone)}`…")
+            await notify(f"📱 Добавляю номер <code>{_escape(phone)}</code>…")
             phone_ok = await reg.enter_phone_number(phone)
             if phone_ok:
                 await notify(
-                    "📨 SMS\\-код отправлен\\!\n"
-                    "Введите код из SMS\\:"
+                    "📨 SMS-код отправлен!\n"
+                    "Введите код из SMS:"
                 )
                 # WAITING_SMS state is already active — wait for user input
                 ctx.user_data["_sms_waiting"] = True
                 # The bot will call recv_sms when user sends the code
                 return  # Don't close registrar yet
             else:
-                await notify("⚠️ Шаг с телефоном не обнаружен на странице — пропускаю\\.")
+                await notify("⚠️ Шаг с телефоном не обнаружен на странице — пропускаю.")
 
         # ── 4. Done ───────────────────────────────────────────────────────────
         await _finish(bot, chat_id, ctx)
 
     except Exception as exc:
         logger.exception("Registration error")
-        await notify(f"❌ Ошибка регистрации: `{_escape(str(exc))}`")
+        await notify(f"❌ Ошибка регистрации: <code>{_escape(str(exc))}</code>")
         await _cleanup_registrar(ctx)
 
 
@@ -332,13 +325,13 @@ async def _finish(bot, chat_id: int, ctx: ContextTypes.DEFAULT_TYPE):
     email      = ctx.user_data.get(KEY_EMAIL, "?")
     ka_password = ctx.user_data.get(KEY_PASSWORD, "?")
     text = (
-        "🎉 *Регистрация завершена\\!*\n\n"
-        f"🌐 Сайт: [kleinanzeigen\\.de](https://www.kleinanzeigen.de)\n"
-        f"📧 Email: `{_escape(email)}`\n"
-        f"🔐 Пароль: `{_escape(ka_password)}`\n\n"
-        "_Сохраните данные — бот их больше не хранит\\._"
+        "🎉 <b>Регистрация завершена!</b>\n\n"
+        f'🌐 Сайт: <a href="https://www.kleinanzeigen.de">kleinanzeigen.de</a>\n'
+        f"📧 Email: <code>{_escape(email)}</code>\n"
+        f"🔐 Пароль: <code>{_escape(ka_password)}</code>\n\n"
+        "<i>Сохраните данные — бот их больше не хранит.</i>"
     )
-    await bot.send_message(chat_id, text, parse_mode=ParseMode.MARKDOWN_V2)
+    await bot.send_message(chat_id, text, parse_mode=ParseMode.HTML)
     await _cleanup_registrar(ctx)
     ctx.user_data.clear()
 
@@ -349,25 +342,25 @@ async def _finish(bot, chat_id: int, ctx: ContextTypes.DEFAULT_TYPE):
 
 async def recv_sms(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     if not ctx.user_data.get("_sms_waiting"):
-        await _send(update, "❓ Нет активного запроса SMS\\-кода\\.")
+        await _send(update, "❓ Нет активного запроса SMS-кода.")
         return ConversationHandler.END
 
     code = (update.message.text or "").strip()
     reg: Optional[KleinanzeigenRegistrar] = ctx.user_data.get(KEY_REGISTRAR)
     if not reg:
-        await _send(update, "❌ Сессия регистрации не найдена\\. Начните заново /reg")
+        await _send(update, "❌ Сессия регистрации не найдена. Начните заново /reg")
         return ConversationHandler.END
 
-    await _send(update, f"🔢 Ввожу код `{_escape(code)}`…", parse_mode=ParseMode.MARKDOWN_V2)
+    await _send(update, f"🔢 Ввожу код <code>{_escape(code)}</code>…", parse_mode=ParseMode.HTML)
     sms_ok = await reg.enter_sms_code(code)
 
     if sms_ok:
-        await _send(update, "✅ Телефон подтверждён\\!", parse_mode=ParseMode.MARKDOWN_V2)
+        await _send(update, "✅ Телефон подтверждён!", parse_mode=ParseMode.HTML)
     else:
         await _send(
             update,
-            "⚠️ Не удалось ввести код автоматически\\. Проверьте аккаунт вручную\\.",
-            parse_mode=ParseMode.MARKDOWN_V2,
+            "⚠️ Не удалось ввести код автоматически. Проверьте аккаунт вручную.",
+            parse_mode=ParseMode.HTML,
         )
 
     ctx.user_data.pop("_sms_waiting", None)
@@ -379,17 +372,9 @@ async def recv_sms(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 # Utility
 # ─────────────────────────────────────────────────────────────────────────────
 
-_ESC = str.maketrans({
-    "_": r"\_", "*": r"\*", "[": r"\[", "]": r"\]",
-    "(": r"\(", ")": r"\)", "~": r"\~", "`": r"\`",
-    ">": r"\>", "#": r"\#", "+": r"\+", "-": r"\-",
-    "=": r"\=", "|": r"\|", "{": r"\{", "}": r"\}",
-    ".": r"\.", "!": r"\!",
-})
-
-
 def _escape(text: str) -> str:
-    return text.translate(_ESC)
+    """Escape HTML special characters for Telegram HTML parse mode."""
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
