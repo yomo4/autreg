@@ -260,20 +260,33 @@ async def _run_registration(
     async def notify(text: str):
         await bot.send_message(chat_id, text, parse_mode=ParseMode.HTML)
 
+    async def send_logs(reg: KleinanzeigenRegistrar, last_n: int = 15, label: str = "Лог"):
+        """Отправить последние N строк логов из регистратора."""
+        chunk = reg.logs[-last_n:] if len(reg.logs) > last_n else reg.logs
+        if chunk:
+            text = f"<b>{_escape(label)}</b>\n<pre>{_escape(chr(10).join(chunk))}</pre>"
+            # Telegram limit 4096 chars — truncate if needed
+            if len(text) > 4000:
+                text = text[:3990] + "\n…</pre>"
+            try:
+                await bot.send_message(chat_id, text, parse_mode=ParseMode.HTML)
+            except Exception:
+                pass
+
     reg = KleinanzeigenRegistrar(proxy_str=proxy)
     ctx.user_data[KEY_REGISTRAR] = reg
 
     try:
         await reg._start()
+        await send_logs(reg, label="🚀 Браузер запущен")
 
         # ── 1. Fill registration form ─────────────────────────────────────────
         await notify("⚙️ Заполняю форму регистрации…")
         ok = await reg.fill_registration_form(email, ka_password)
+        await send_logs(reg, last_n=20, label="📋 Лог формы регистрации")
+
         if not ok:
-            await notify(
-                "❌ Не удалось заполнить форму регистрации.\n"
-                "<pre>" + _escape("\n".join(reg.logs[-10:])) + "</pre>"
-            )
+            await notify("❌ Не удалось заполнить форму регистрации.")
             return
 
         # ── 2. Email verification ──────────────────────────────────────────────
@@ -294,12 +307,14 @@ async def _run_registration(
         else:
             await notify("✅ Письмо найдено. Открываю ссылку верификации…")
             await reg.open_verification_link(link)
+            await send_logs(reg, last_n=10, label="📋 Лог верификации email")
             await notify("✅ Email подтверждён!")
 
         # ── 3. Phone step ─────────────────────────────────────────────────────
         if phone:
             await notify(f"📱 Добавляю номер <code>{_escape(phone)}</code>…")
             phone_ok = await reg.enter_phone_number(phone)
+            await send_logs(reg, last_n=10, label="📋 Лог телефона")
             if phone_ok:
                 await notify(
                     "📨 SMS-код отправлен!\n"
@@ -317,6 +332,7 @@ async def _run_registration(
 
     except Exception as exc:
         logger.exception("Registration error")
+        await send_logs(reg, last_n=25, label="📋 Полный лог ошибки")
         await notify(f"❌ Ошибка регистрации: <code>{_escape(str(exc))}</code>")
         await _cleanup_registrar(ctx)
 
